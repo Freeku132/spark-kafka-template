@@ -29,3 +29,12 @@ docker compose start
 ```bash
 docker compose down
 ```
+### To connect your own git repo, simply delete .git directory
+There is command for Linux/macOS users
+```bash
+rm -rf .git
+```
+For Windows users use:
+```bash
+rmdir /s /q .git
+```
