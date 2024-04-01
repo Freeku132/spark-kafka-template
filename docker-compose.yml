@@ -1,0 +1,54 @@
+version: '2'
+services:
+  pyspark-jupyter:
+    build: .
+    user: root
+    container_name: ${PROJECT_NAME}-pyspark-jupyter
+    ports:
+      - ${JUPYTER_PORT}:${JUPYTER_PORT}
+      - ${SPARK_UI_PORT}:${SPARK_UI_PORT}
+    environment:
+      JUPYTER_PORT: ${JUPYTER_PORT}
+      SPARK_UI_PORT: ${SPARK_UI_PORT}
+      GRANT_SUDO: ${GRANT_SUDO}
+      JUPYTER_ENABLE_LAB: ${JUPYTER_ENABLE_LAB}
+      NOTEBOOK_ARGS: ${NOTEBOOK_ARGS}
+    volumes:
+      - streaming_data:/data:rw
+      - ./work:/home/jovyan/work
+    env_file:
+      - .env
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: ${PROJECT_NAME}-zookeeper
+    ports:
+      - ${ZOOKEEPER_CLIENT_PORT}:${ZOOKEEPER_CLIENT_PORT}
+    environment:
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+    env_file:
+      - .env
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: ${PROJECT_NAME}-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    volumes:
+      - streaming_data:/data:rw
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: ${PROJECT_NAME}-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${PROJECT_NAME}-kafka:29092,PLAINTEXT_HOST://127.0.0.1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "raw:1:1"
+    env_file:
+      - .env
+
+volumes:
+  streaming_data:
